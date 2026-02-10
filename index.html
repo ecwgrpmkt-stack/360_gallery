@@ -2,14 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>360 Gallery - Interactive</title>
+    <title>360 Gallery - Interactive Studio</title>
     <link rel="stylesheet" href="pannellum.css">
     <link rel="stylesheet" href="style.css">
     <script src="pannellum.js"></script>
 </head>
 <body>
     <div id="app">
+        
         <div id="viewer"></div>
+
+        <canvas id="drawingCanvas"></canvas>
 
         <div id="fadeOverlay"></div>
 
@@ -18,25 +21,43 @@
             <div class="drag-text">Drag to Explore</div>
         </div>
 
-        <div id="badge360">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                <path d="M21.5 12a9.5 9.5 0 1 1-9.5-9.5"/>
-                <path d="M12 7v5l3 3"/>
-                <circle cx="12" cy="12" r="2"/>
-            </svg>
-            <span>360° View</span>
+        <div id="badge360"></div>
+
+        <div id="drawingToolbar">
+            <button id="pencilBtn" class="tool-btn" title="Toggle Drawing Mode">✏️</button>
+            
+            <button id="brushSizeBtn" class="tool-btn" title="Brush Size">●</button>
+            <div id="brushPopup" class="tool-popup">
+                <input type="range" id="sizeSlider" min="2" max="20" value="5">
+            </div>
+
+            <button id="colorPaletteBtn" class="tool-btn" title="Color Palette">🎨</button>
+            <div id="colorPopup" class="tool-popup">
+                <div class="color-swatch" style="background: #ff0000;" data-color="#ff0000"></div>
+                <div class="color-swatch" style="background: #00ff00;" data-color="#00ff00"></div>
+                <div class="color-swatch" style="background: #0000ff;" data-color="#0000ff"></div>
+                <div class="color-swatch" style="background: #ffff00;" data-color="#ffff00"></div>
+                <div class="color-swatch" style="background: #ffffff;" data-color="#ffffff"></div>
+            </div>
+
+            <button id="eraserBtn" class="tool-btn" title="Eraser">🧹</button>
+
+            <button id="clearBtn" class="tool-btn" title="Clear All & Exit">🗑️</button>
+
+            <div id="lockIndicatorTool">🔒</div>
         </div>
 
         <div id="sidebar">
-    <div class="sidebar-title">Select your interior</div>
-    <div id="thumbPanel"></div>
-</div>
+            <div class="sidebar-title">Select your interior</div>
+            <div id="thumbPanel"></div>
+        </div>
 
         <div id="controls">
-            <button id="prevBtn" aria-label="Previous Image">◀</button>
-            <button id="fsBtn" aria-label="Toggle Fullscreen">⛶</button>
-            <button id="nextBtn" aria-label="Next Image">▶</button>
+            <button id="prevBtn" aria-label="Previous">◀</button>
+            <button id="fsBtn" aria-label="Fullscreen">⛶</button>
+            <button id="nextBtn" aria-label="Next">▶</button>
         </div>
+
     </div>
     <script src="app.js"></script>
 </body>
