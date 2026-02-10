@@ -1,6 +1,7 @@
 // CONFIGURATION: GitHub Repository Details
 const REPO_OWNER = "ecwgrpmkt-stack";
 const REPO_NAME = "360_gallery";
+const BRANCH_NAME = "main"; // Assuming 'main' branch. Change to 'master' if needed.
 const IMAGE_FOLDER_PATH = "images";
 
 // We will populate this array dynamically
@@ -30,12 +31,18 @@ async function initGallery() {
 
         // Filter and Format the data
         images = data
-            .filter(file => file.name.match(/\.(jpg|jpeg|png)$/i)) // Only images
-            .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'})) // Natural sort (img1, img2, img10)
-            .map(file => ({ 
-                // We use the raw download URL to ensure we can load the image data across domains
-                src: file.download_url 
-            }));
+            .filter(file => file.name.match(/\.(jpg|jpeg|png)$/i))
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}))
+            .map(file => {
+                // OPTIMIZATION 1: Use jsDelivr CDN for faster delivery than raw.github
+                // Format: https://cdn.jsdelivr.net/gh/USER/REPO@BRANCH/PATH
+                const cdnSrc = `https://cdn.jsdelivr.net/gh/${REPO_OWNER}/${REPO_NAME}@${BRANCH_NAME}/${file.path}`;
+                
+                return { 
+                    src: cdnSrc,
+                    originalPath: file.download_url // Fallback if needed
+                };
+            });
 
         if (images.length === 0) {
             alert("No images found in the GitHub repository folder.");
@@ -50,7 +57,7 @@ async function initGallery() {
 
     } catch (error) {
         console.error("Failed to load images:", error);
-        alert("Could not load images from GitHub. Check console for details.");
+        alert("Could not load images. Check console.");
     }
 }
 
@@ -64,7 +71,7 @@ function loadViewer(index) {
 
     // Pre-load Image to analyze dimensions
     const tempImg = new Image();
-    tempImg.crossOrigin = "Anonymous"; // Crucial for external GitHub images
+    tempImg.crossOrigin = "Anonymous"; 
     tempImg.src = imgData.src;
     
     tempImg.onload = function() {
@@ -72,11 +79,22 @@ function loadViewer(index) {
 
         const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
         detectAndSetupScene(aspectRatio, imgData.src);
+        
+        // OPTIMIZATION 3: Pre-load the NEXT image in the background
+        preloadNextImage(index);
     };
     
     tempImg.onerror = function() {
         console.error("Error loading image:", imgData.src);
     };
+}
+
+// Helper to pre-load the next image for instant transition
+function preloadNextImage(currentIndex) {
+    const nextIndex = (currentIndex + 1) % images.length;
+    const preloadImg = new Image();
+    preloadImg.crossOrigin = "Anonymous";
+    preloadImg.src = images[nextIndex].src;
 }
 
 function detectAndSetupScene(aspectRatio, imageSrc) {
@@ -89,7 +107,7 @@ function detectAndSetupScene(aspectRatio, imageSrc) {
         panorama: imageSrc,
         autoLoad: true,
         showControls: false,
-        crossOrigin: "anonymous", // Required for GitHub Raw Images
+        crossOrigin: "anonymous", 
         yaw: 0,
         pitch: 0,
         autoRotate: 0 
@@ -188,10 +206,16 @@ function buildThumbnails() {
 
     images.forEach((img, i) => {
         const thumb = document.createElement("img");
-        thumb.src = img.src;
+        
+        // OPTIMIZATION 2: Use wsrv.nl to resize images on the fly!
+        // This requests a small 200px version of the CDN image.
+        // Format: https://wsrv.nl/?url=[IMAGE_URL]&w=200&q=70
+        const thumbUrl = `https://wsrv.nl/?url=${encodeURIComponent(img.src)}&w=200&q=70&output=webp`;
+
+        thumb.src = thumbUrl;
         thumb.className = "thumb";
-        // CrossOrigin is needed for thumbnails too if they come from raw.github
         thumb.crossOrigin = "Anonymous"; 
+        
         thumb.onclick = () => {
             resetIdleTimer();
             transitionToImage(i);
@@ -266,5 +290,4 @@ fsBtn.onclick = () => {
 };
 
 // --- START ---
-// Call the async init function instead of manually calling buildThumbnails
 initGallery();
