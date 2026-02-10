@@ -1,12 +1,11 @@
 // CONFIGURATION: GitHub Repository Details
 const REPO_OWNER = "ecwgrpmkt-stack";
 const REPO_NAME = "360_gallery";
-const BRANCH_NAME = "main"; // Change to 'master' if your default branch is master
+const BRANCH_NAME = "main"; // Check if your repo uses 'main' or 'master'
 const IMAGE_FOLDER_PATH = "images";
 
-// We will populate this array dynamically
+// Global Variables
 let images = []; 
-
 let currentIndex = 0;
 let viewer = null;
 let activeImageSrc = null;
@@ -14,8 +13,8 @@ let activeImageSrc = null;
 // TIMERS
 let idleTimer = null;
 let slideTimer = null;
-const IDLE_DELAY = 3000;       // 3 seconds before showing hand/zooming out
-const AUTO_PLAY_DELAY = 60000; // 60 seconds before auto-advancing
+const IDLE_DELAY = 3000;       // 3 seconds: Show Hand & Zoom Out
+const AUTO_PLAY_DELAY = 60000; // 60 seconds: Auto-Advance Slide
 
 // --- 1. INITIALIZATION: Fetch Images from GitHub ---
 
@@ -31,22 +30,22 @@ async function initGallery() {
 
         // Filter and Format the data
         images = data
-            .filter(file => file.name.match(/\.(jpg|jpeg|png)$/i)) // Only images
-            .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'})) // Natural sort
+            .filter(file => file.name.match(/\.(jpg|jpeg|png)$/i)) // Only image files
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'})) // Natural Sort
             .map(file => {
-                // 1. Get the fast CDN source for the original file
+                // 1. Construct the fast CDN URL (bypass raw.githubusercontent for speed)
                 const rawCdnSrc = `https://cdn.jsdelivr.net/gh/${REPO_OWNER}/${REPO_NAME}@${BRANCH_NAME}/${file.path}`;
                 
-                // 2. APPLY RESOLUTION LIMIT (Device Support Fix)
-                // &w=8000  -> Resize width to 8000px MAX
-                // &we      -> "Without Enlargement" (If image is small, don't stretch it)
-                // &q=85    -> High quality (85%) to keep 360 details sharp
-                // &output=webp -> Smaller file size
+                // 2. APPLY RESOLUTION LIMIT (Device Crash Prevention)
+                // Using wsrv.nl to resize on the fly:
+                // &w=8000 -> Resize width to max 8000px (Height scales automatically)
+                // &we     -> Without Enlargement (Don't stretch small images)
+                // &q=85   -> High Quality
                 const optimizedSrc = `https://wsrv.nl/?url=${encodeURIComponent(rawCdnSrc)}&w=8000&we&q=85&output=webp`;
 
                 return { 
                     src: optimizedSrc,
-                    originalPath: rawCdnSrc // Keep reference for thumbnails
+                    originalPath: rawCdnSrc // Keep original link for thumbnails
                 };
             });
 
@@ -63,7 +62,7 @@ async function initGallery() {
 
     } catch (error) {
         console.error("Failed to load images:", error);
-        alert("Could not load images. Check console.");
+        alert("Could not load images. Check console for details.");
     }
 }
 
@@ -81,13 +80,13 @@ function loadViewer(index) {
     tempImg.src = imgData.src;
     
     tempImg.onload = function() {
-        // Prevent loading if user switched image while this was processing
+        // Prevent race condition if user switched image quickly
         if (tempImg.src.indexOf(activeImageSrc) === -1) return;
 
         const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
         detectAndSetupScene(aspectRatio, imgData.src);
         
-        // OPTIMIZATION: Pre-load the NEXT image in the background
+        // Optimization: Pre-load the NEXT image in background
         preloadNextImage(index);
     };
     
@@ -96,7 +95,6 @@ function loadViewer(index) {
     };
 }
 
-// Helper to pre-load the next image for instant transition
 function preloadNextImage(currentIndex) {
     const nextIndex = (currentIndex + 1) % images.length;
     const preloadImg = new Image();
@@ -122,7 +120,7 @@ function detectAndSetupScene(aspectRatio, imageSrc) {
 
     // --- LOGIC: Detect Projection Type ---
     
-    // Standard 360 Sphere is 2:1 (approx 2.0)
+    // Standard 360 Sphere is 2:1 ratio (approx 2.0)
     const isFullSphere = aspectRatio >= 1.9 && aspectRatio <= 2.1;
 
     if (isFullSphere) {
@@ -141,10 +139,9 @@ function detectAndSetupScene(aspectRatio, imageSrc) {
         const assumedVerticalFOV = 60; 
         
         // Calculate exact Horizontal degrees based on aspect ratio
-        // Formula: Horizontal = Vertical * AspectRatio
         let calculatedHorizontalFOV = assumedVerticalFOV * aspectRatio;
 
-        // Cap at 360 just in case
+        // Cap at 360
         if (calculatedHorizontalFOV > 360) calculatedHorizontalFOV = 360;
 
         config.haov = calculatedHorizontalFOV;  
@@ -172,7 +169,7 @@ function detectAndSetupScene(aspectRatio, imageSrc) {
     // Initialize Viewer
     viewer = pannellum.viewer('viewer', config);
 
-    // Attach Idle Events
+    // Attach Idle Detection Events
     const viewerContainer = document.getElementById('viewer');
     viewerContainer.onmousedown = resetIdleTimer;
     viewerContainer.ontouchstart = resetIdleTimer;
@@ -233,8 +230,8 @@ function buildThumbnails() {
     images.forEach((img, i) => {
         const thumb = document.createElement("img");
         
-        // THUMBNAIL OPTIMIZATION (Tiny size for sidebar)
-        // Keep this at 200px width for speed
+        // THUMBNAIL OPTIMIZATION (Tiny size for sidebar speed)
+        // Using original path (CDN) but asking wsrv.nl to make it 200px wide
         const thumbUrl = `https://wsrv.nl/?url=${encodeURIComponent(img.originalPath)}&w=200&q=70&output=webp`;
 
         thumb.src = thumbUrl;
@@ -286,6 +283,7 @@ function onIdleStart() {
         const maxFov = viewer.getHfovBounds ? viewer.getHfovBounds()[1] : 120;
         viewer.setHfov(maxFov, 1000); 
         viewer.setPitch(0, 1000);
+        
         // Start rotation (negative is left)
         viewer.startAutoRotate(-5); 
     }
@@ -310,7 +308,7 @@ document.getElementById("nextBtn").onclick = () => {
     transitionToImage(newIndex);
 };
 
-// Custom Fullscreen (keeps sidebar visible)
+// Custom Fullscreen (Keeps sidebar visible)
 const fsBtn = document.getElementById("fsBtn");
 const appContainer = document.getElementById("app");
 
@@ -326,5 +324,5 @@ fsBtn.onclick = () => {
 };
 
 // --- START ---
-// Initialize the gallery by fetching images from GitHub
+// Initialize the gallery
 initGallery();
