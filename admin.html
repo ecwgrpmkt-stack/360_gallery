@@ -20,16 +20,14 @@
             <h2>Upload New Image</h2>
             <div class="upload-controls">
                 <div class="input-group">
-                    <label>GitHub Personal Access Token (Required for Uploads)</label>
+                    <label>GitHub Personal Access Token (Classic)</label>
                     <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" class="token-input">
-                    <small>Token is saved locally in your browser. Never shared.</small>
                 </div>
                 
                 <div class="file-drop-area" id="dropArea">
                     <input type="file" id="fileInput" accept="image/jpeg, image/png">
                     <p>Drag & Drop Image Here or <span>Browse</span></p>
                 </div>
-
                 <div id="uploadStatus" class="status-msg"></div>
             </div>
         </div>
@@ -46,18 +44,17 @@
                         <th>Preview</th>
                         <th>Filename</th>
                         <th>Dimensions</th>
-                        <th>Type</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="imageTableBody">
-                    <tr><td colspan="5" style="text-align:center;">Loading repository data...</td></tr>
+                    <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
 
     </div>
-
     <script src="admin.js"></script>
 </body>
 </html>
