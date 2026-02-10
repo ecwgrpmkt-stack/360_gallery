@@ -2,7 +2,7 @@
 const REPO_OWNER = "ecwgrpmkt-stack";
 const REPO_NAME = "360_gallery";
 const IMAGE_FOLDER_PATH = "images";
-const BRANCH_FALLBACK = "main"; // Use 'master' if your repo uses master
+const BRANCH_FALLBACK = "main"; 
 
 // GLOBALS
 let images = []; 
@@ -25,91 +25,81 @@ let currentBrushSize = 5;
 let currentColor = "#ff0000";
 let isEraser = false;
 
-// --- 1. ROBUST INITIALIZATION ---
+// HISTORY SYSTEM
+let drawingHistory = [];
+let historyStep = -1;
+const MAX_HISTORY = 3;
+
+// --- 1. INITIALIZATION ---
 
 async function initGallery() {
     initDrawingTools();
-
-    console.log("Attempting to load images...");
+    console.log("Initializing Gallery...");
 
     try {
-        // METHOD A: GitHub API (The best way, but has rate limits)
         const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${IMAGE_FOLDER_PATH}`;
         const response = await fetch(apiUrl);
 
-        if (!response.ok) {
-            throw new Error(`GitHub API Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`GitHub API Error: ${response.status}`);
 
         const data = await response.json();
-
         images = data
             .filter(file => file.name.match(/\.(jpg|jpeg|png)$/i))
             .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}))
             .map(file => {
-                // Use the API's provided download_url directly (most reliable)
                 const rawUrl = file.download_url;
-                // Create optimized proxy URL
                 const optimizedSrc = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=8000&we&q=85&output=webp`;
-                
                 return { src: optimizedSrc, originalPath: rawUrl };
             });
 
-        console.log(`API Success: Loaded ${images.length} images.`);
         finishInit();
-
     } catch (error) {
-        console.warn("API failed (likely rate limit). Switching to FALLBACK mode.", error);
+        console.warn("Switching to Fallback Mode...", error);
         loadFallbackImages();
     }
 }
 
-// METHOD B: Manual Fallback (If API fails)
 function loadFallbackImages() {
-    // Manually construct URLs for img1.jpg to img15.jpg
     const fallbackList = [];
-    const maxGuess = 15; // Try to load first 15 images
-
-    for (let i = 1; i <= maxGuess; i++) {
-        // Construct a raw GitHub User Content URL
-        // Try 'main' branch first. If your repo is 'master', change the const at top.
+    for (let i = 1; i <= 15; i++) {
         const rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH_FALLBACK}/${IMAGE_FOLDER_PATH}/img${i}.jpg`;
-        
         const optimizedSrc = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=8000&we&q=85&output=webp`;
-        
         fallbackList.push({ src: optimizedSrc, originalPath: rawUrl });
     }
-
     images = fallbackList;
-    console.log(`Fallback Mode: Attempting to load ${images.length} predicted images.`);
     finishInit();
 }
 
 function finishInit() {
     if (images.length === 0) {
-        alert("Critical Error: No images could be loaded. Check console for details.");
+        alert("Error: No images found.");
         return;
     }
     buildThumbnails();
     loadViewer(currentIndex);
 }
 
-// --- 2. DRAWING LOGIC ---
+// --- 2. DRAWING & HISTORY LOGIC ---
 
 function initDrawingTools() {
     canvas = document.getElementById("drawingCanvas");
     drawCtx = canvas.getContext("2d");
 
+    // Initial resize to match layout
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
+    // Elements
     const pencilBtn = document.getElementById("pencilBtn");
     const brushSizeBtn = document.getElementById("brushSizeBtn");
     const colorPaletteBtn = document.getElementById("colorPaletteBtn");
     const eraserBtn = document.getElementById("eraserBtn");
     const clearBtn = document.getElementById("clearBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
     const sizeSlider = document.getElementById("sizeSlider");
 
+    // Handlers
     pencilBtn.onclick = () => { isDrawingMode = !isDrawingMode; toggleDrawingState(); };
     
     brushSizeBtn.onclick = () => togglePopup("brushPopup");
@@ -119,11 +109,16 @@ function initDrawingTools() {
         togglePopup("colorPopup");
         if (isEraser) { isEraser = false; eraserBtn.classList.remove("active"); }
     };
-
+    
     document.querySelectorAll(".color-swatch").forEach(swatch => {
         swatch.onclick = () => {
             currentColor = swatch.getAttribute("data-color");
             document.getElementById("colorPopup").style.display = "none";
+            // Auto-enable drawing when color selected
+            if (!isDrawingMode) {
+                isDrawingMode = true;
+                toggleDrawingState();
+            }
         };
     });
 
@@ -134,15 +129,21 @@ function initDrawingTools() {
     };
 
     clearBtn.onclick = () => {
-        drawCtx.clearRect(0, 0, canvas.width, canvas.height);
+        clearCanvas();
+        // Also exit drawing mode on clear
         if (isDrawingMode) { isDrawingMode = false; toggleDrawingState(); }
     };
 
+    undoBtn.onclick = undoLastStroke;
+    redoBtn.onclick = redoLastStroke;
+
+    // Canvas Events
     canvas.addEventListener('mousedown', startDraw);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw);
     canvas.addEventListener('mouseout', stopDraw);
     
+    // Touch Events
     canvas.addEventListener('touchstart', (e) => { if(e.cancelable) e.preventDefault(); startDraw(e.touches[0]); }, {passive: false});
     canvas.addEventListener('touchmove', (e) => { if(e.cancelable) e.preventDefault(); draw(e.touches[0]); }, {passive: false});
     canvas.addEventListener('touchend', stopDraw);
@@ -150,8 +151,12 @@ function initDrawingTools() {
 
 function resizeCanvas() {
     if (canvas && canvas.parentElement) {
-        canvas.width = canvas.parentElement.clientWidth;
+        // MATCH CSS: Width is parent width minus sidebar (140px)
+        canvas.width = canvas.parentElement.clientWidth - 140;
         canvas.height = canvas.parentElement.clientHeight;
+        
+        // Note: Resizing clears canvas. If persistence is needed, we'd redraw history here.
+        // For now, we accept clear-on-resize to keep logic simple.
     }
 }
 
@@ -165,25 +170,81 @@ function togglePopup(id) {
 function toggleDrawingState() {
     const pencilBtn = document.getElementById("pencilBtn");
     const lockIcon = document.getElementById("lockIndicatorTool");
-    const eraserBtn = document.getElementById("eraserBtn");
+    const controls = document.getElementById("controls");
 
     if (isDrawingMode) {
+        // ACTIVATE
         pencilBtn.classList.add("active");
         lockIcon.style.display = "block";
-        canvas.style.pointerEvents = "auto";
+        canvas.classList.add("active");
+        controls.classList.add("disabled"); // Dim bottom controls
+
+        // Pause idle
         resetIdleTimer();
         if(viewer) viewer.stopAutoRotate();
+
+        // Init history if fresh
+        if (drawingHistory.length === 0) saveHistoryState();
+
     } else {
+        // DEACTIVATE
         pencilBtn.classList.remove("active");
-        eraserBtn.classList.remove("active");
         lockIcon.style.display = "none";
         document.querySelectorAll(".tool-popup").forEach(p => p.style.display = "none");
-        canvas.style.pointerEvents = "none";
+        
+        canvas.classList.remove("active");
+        controls.classList.remove("disabled");
+
+        clearCanvas(); // VANISH drawings
+        
         isEraser = false;
+        document.getElementById("eraserBtn").classList.remove("active");
+        
         startIdleCountdown();
     }
 }
 
+function clearCanvas() {
+    drawCtx.clearRect(0, 0, canvas.width, canvas.height);
+    drawingHistory = [];
+    historyStep = -1;
+}
+
+// HISTORY
+function saveHistoryState() {
+    historyStep++;
+    if (historyStep < drawingHistory.length) drawingHistory.length = historyStep;
+    drawingHistory.push(canvas.toDataURL());
+    if (drawingHistory.length > MAX_HISTORY + 1) {
+        drawingHistory.shift();
+        historyStep--;
+    }
+}
+
+function undoLastStroke() {
+    if (historyStep > 0) {
+        historyStep--;
+        loadHistoryState(drawingHistory[historyStep]);
+    }
+}
+
+function redoLastStroke() {
+    if (historyStep < drawingHistory.length - 1) {
+        historyStep++;
+        loadHistoryState(drawingHistory[historyStep]);
+    }
+}
+
+function loadHistoryState(dataUrl) {
+    const img = new Image();
+    img.src = dataUrl;
+    img.onload = () => {
+        drawCtx.clearRect(0, 0, canvas.width, canvas.height);
+        drawCtx.drawImage(img, 0, 0);
+    };
+}
+
+// DRAWING
 function startDraw(e) {
     if (!isDrawingMode) return;
     isDrawing = true;
@@ -199,21 +260,23 @@ function draw(e) {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
     drawCtx.lineWidth = currentBrushSize;
     drawCtx.lineCap = "round";
+    drawCtx.strokeStyle = isEraser ? "rgba(0,0,0,1)" : currentColor;
+    drawCtx.globalCompositeOperation = isEraser ? "destination-out" : "source-over";
     
-    if (isEraser) {
-        drawCtx.globalCompositeOperation = "destination-out";
-        drawCtx.strokeStyle = "rgba(0,0,0,1)";
-    } else {
-        drawCtx.globalCompositeOperation = "source-over";
-        drawCtx.strokeStyle = currentColor;
-    }
     drawCtx.lineTo(x, y);
     drawCtx.stroke();
 }
 
-function stopDraw() { isDrawing = false; drawCtx.closePath(); }
+function stopDraw() {
+    if (isDrawing) {
+        isDrawing = false;
+        drawCtx.closePath();
+        saveHistoryState();
+    }
+}
 
 // --- 3. VIEWER LOGIC ---
 
@@ -222,7 +285,6 @@ function loadViewer(index) {
     const imgData = images[index];
     activeImageSrc = imgData.src;
 
-    // Use a temporary image to check if the file actually exists
     const tempImg = new Image();
     tempImg.crossOrigin = "Anonymous"; 
     tempImg.src = imgData.src;
@@ -232,12 +294,6 @@ function loadViewer(index) {
         const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
         detectAndSetupScene(aspectRatio, imgData.src);
         preloadNextImage(index);
-    };
-
-    tempImg.onerror = function() {
-        console.error("Image failed to load (404 or Network Error):", imgData.src);
-        // If image fails, try the next one automatically? 
-        // Or just let the user see a blank screen (safer to avoid loops)
     };
 }
 
@@ -305,11 +361,12 @@ function updateBadge(type) {
 }
 
 function transitionToImage(index) {
+    // Force Exit Drawing Mode if active
     if (isDrawingMode) {
-        drawCtx.clearRect(0, 0, canvas.width, canvas.height);
         isDrawingMode = false;
-        toggleDrawingState();
+        toggleDrawingState(); // This clears the canvas & resets controls
     }
+
     const overlay = document.getElementById('fadeOverlay');
     overlay.classList.add('active');
     setTimeout(() => {
@@ -321,74 +378,3 @@ function transitionToImage(index) {
 
 function buildThumbnails() {
     const panel = document.getElementById("thumbPanel");
-    panel.innerHTML = "";
-    images.forEach((img, i) => {
-        const thumb = document.createElement("img");
-        // Use optimized URL for thumbnail
-        thumb.src = `https://wsrv.nl/?url=${encodeURIComponent(img.originalPath)}&w=200&q=70&output=webp`;
-        thumb.className = "thumb";
-        thumb.crossOrigin = "Anonymous"; 
-        thumb.onerror = () => { thumb.style.display = "none"; };
-        thumb.onclick = () => { resetIdleTimer(); transitionToImage(i); };
-        panel.appendChild(thumb);
-    });
-}
-
-function updateThumbs() {
-    document.querySelectorAll(".thumb").forEach((t, i) => {
-        t.classList.toggle("active", i === currentIndex);
-        if(i === currentIndex) t.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-}
-
-function startIdleCountdown() {
-    clearTimeout(idleTimer); clearTimeout(slideTimer);
-    if (isDrawingMode) return;
-    idleTimer = setTimeout(onIdleStart, IDLE_DELAY);
-    slideTimer = setTimeout(onAutoPlayNext, AUTO_PLAY_DELAY);
-}
-
-function resetIdleTimer() {
-    clearTimeout(idleTimer); clearTimeout(slideTimer);
-    document.getElementById('idleIndicator').classList.remove('visible');
-    if (viewer) viewer.stopAutoRotate();
-}
-
-function onIdleStart() {
-    if (isDrawingMode) return;
-    document.getElementById('idleIndicator').classList.add('visible');
-    if (viewer) {
-        const maxFov = viewer.getHfovBounds ? viewer.getHfovBounds()[1] : 120;
-        viewer.setHfov(maxFov, 1000); 
-        viewer.setPitch(0, 1000);
-        viewer.startAutoRotate(-5); 
-    }
-}
-
-function onAutoPlayNext() {
-    if (isDrawingMode) return;
-    let nextIndex = (currentIndex + 1) % images.length;
-    transitionToImage(nextIndex);
-}
-
-document.getElementById("prevBtn").onclick = () => {
-    resetIdleTimer();
-    let newIndex = (currentIndex - 1 + images.length) % images.length;
-    transitionToImage(newIndex);
-};
-document.getElementById("nextBtn").onclick = () => {
-    resetIdleTimer();
-    let newIndex = (currentIndex + 1) % images.length;
-    transitionToImage(newIndex);
-};
-const fsBtn = document.getElementById("fsBtn");
-fsBtn.onclick = () => {
-    resetIdleTimer();
-    if (!document.fullscreenElement) {
-        document.getElementById("app").requestFullscreen().catch(console.log);
-    } else {
-        document.exitFullscreen();
-    }
-};
-
-initGallery();
