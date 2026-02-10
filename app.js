@@ -24,7 +24,6 @@ function loadViewer(index) {
     }
 
     // 2. Create new Viewer
-    // FEATURE 5: We define 'maxHfov' (max zoom out) as 120
     viewer = pannellum.viewer('viewer', {
         type: "equirectangular",
         panorama: images[index].src,
@@ -32,7 +31,7 @@ function loadViewer(index) {
         showControls: false, // We use our own controls
         hfov: 100,           // Starting Zoom
         minHfov: 50,         // Max Zoom In
-        maxHfov: 120,        // Max Zoom Out (Feature 5 target)
+        maxHfov: 120,        // Max Zoom Out (Required for idle zoom)
         yaw: 0,
         pitch: 0,
         autoRotate: 0        // Start with 0, we handle rotation in idle logic
@@ -49,10 +48,9 @@ function loadViewer(index) {
     viewerContainer.onmouseup = startIdleCountdown;
     viewerContainer.ontouchend = startIdleCountdown;
 
-    // Also update UI
     updateThumbs();
     
-    // Start the loop logic immediately (assume idle on load)
+    // Start the loop logic immediately
     startIdleCountdown();
 }
 
@@ -103,17 +101,16 @@ function updateThumbs() {
     });
 }
 
-// --- IDLE & AUTO-PLAY SYSTEM (Features 1, 3, 5) ---
+// --- IDLE & AUTO-PLAY SYSTEM ---
 
 function startIdleCountdown() {
-    // Clear existing to prevent duplicates
     clearTimeout(idleTimer);
     clearTimeout(slideTimer);
 
-    // Timer 1: Small delay (e.g. 3s) -> Show Hand, Zoom Out, Rotate
+    // Timer 1: Small delay (3s) -> Show Hand, Zoom Out, Rotate
     idleTimer = setTimeout(onIdleStart, IDLE_DELAY);
 
-    // Timer 2: Long delay (e.g. 10s) -> Go to Next Slide
+    // Timer 2: Long delay (10s) -> Go to Next Slide
     slideTimer = setTimeout(onAutoPlayNext, AUTO_PLAY_DELAY);
 }
 
@@ -132,15 +129,15 @@ function resetIdleTimer() {
 }
 
 function onIdleStart() {
-    // FEATURE 3: Show Hand Icon
     document.getElementById('idleIndicator').classList.add('visible');
 
     if (viewer) {
-        // FEATURE 5: Zoom to Max Out (120)
-        viewer.setHfov(120, 1000); // 1000ms animation
+        // FEATURE 5: Zoom to Max Out (120) and Reset Pitch to 0 (Center)
+        viewer.setHfov(120, 1000); 
+        viewer.setPitch(0, 1000);
         
-        // Start Auto Rotate
-        viewer.startAutoRotate(-5); // Negative for left, Positive for right
+        // Start Auto Rotate (Negative for Left, Positive for Right)
+        viewer.startAutoRotate(-5); 
     }
 }
 
@@ -165,16 +162,15 @@ document.getElementById("nextBtn").onclick = () => {
 };
 
 // FEATURE 4: Custom Fullscreen Logic
-// We request fullscreen on the #app div, NOT the internal viewer.
-// This keeps the sidebar visible.
 const fsBtn = document.getElementById("fsBtn");
 const appContainer = document.getElementById("app");
 
 fsBtn.onclick = () => {
     resetIdleTimer();
     if (!document.fullscreenElement) {
+        // Request fullscreen on the CONTAINER (#app), so sidebar stays visible
         appContainer.requestFullscreen().catch(err => {
-            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            console.log(`Error attempting to enable full-screen mode: ${err.message}`);
         });
     } else {
         document.exitFullscreen();
