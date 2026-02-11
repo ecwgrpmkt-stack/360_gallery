@@ -183,3 +183,52 @@ input[type="text"], input[type="password"] {
 .btn-blue { background: #3399ff; color: white; }
 .btn-yellow { background: #ffcc00; color: black; }
 .btn-red { background: #ff3333; color: white; }
+
+/* --- CONFIGURATION GROUP UI --- */
+.config-group {
+    margin-bottom: 15px;
+}
+.config-group label {
+    display: block;
+    color: #888;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+.input-with-btn {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.input-with-btn input {
+    margin-bottom: 0; /* Override previous margin */
+    flex: 1;
+}
+.input-with-btn input[readonly] {
+    background: rgba(0,0,0,0.6);
+    color: #888;
+    border-color: #222;
+}
+.btn-icon {
+    width: 42px;
+    height: 42px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.btn-icon:hover {
+    background: #ff3333;
+    border-color: #ff3333;
+}
+.panel-divider {
+    border: 0;
+    height: 1px;
+    background: #333;
+    margin: 25px 0;
+}
