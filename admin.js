@@ -4,11 +4,9 @@ let currentToken = localStorage.getItem('gh_token') || "";
 
 window.onload = () => { if (currentToken) loadAssets(); };
 
-// --- UI HELPERS ---
 const showLoader = () => document.getElementById('loading-modal').style.display = 'flex';
 const hideLoader = () => document.getElementById('loading-modal').style.display = 'none';
 
-// --- SECURITY: LOCK/UNLOCK ---
 function toggleLock(type) {
     const field = type === 'token' ? document.getElementById('gh-token') : document.getElementById('gh-repo');
     const icon = document.getElementById(`lock-icon-${type}`);
@@ -34,14 +32,12 @@ function toggleLock(type) {
     }
 }
 
-// --- CORE: READ (LOAD ASSETS) ---
 async function loadAssets() {
     if (!currentToken) return;
     const tbody = document.getElementById('asset-table');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center"><i class="fas fa-spinner fa-spin"></i> Fetching repository...</td></tr>';
     
     try {
-        // Add cache buster ?t= to force fresh data
         const res = await fetch(`https://api.github.com/repos/${REPO_URL}/contents/images?t=${Date.now()}`, {
             headers: { 'Authorization': `token ${currentToken}` }
         });
@@ -57,9 +53,9 @@ async function loadAssets() {
                 
                 tbody.innerHTML += `
                     <tr>
-                        <td><img src="${file.download_url}" class="thumb"></td>
+                        <td><img src="${file.download_url}" class="admin-thumb"></td>
                         <td>${displayName}</td>
-                        <td><span class="status-badge ${isHidden ? 'status-hidden' : 'status-live'}">${isHidden ? 'HIDDEN' : 'LIVE'}</span></td>
+                        <td><span class="badge ${isHidden ? 'warning' : 'success'}">${isHidden ? 'HIDDEN' : 'LIVE'}</span></td>
                         <td style="display:flex; gap:8px">
                             <button class="btn btn-secondary" title="${isHidden ? 'Show' : 'Hide'}" onclick="toggleVisibility('${file.name}', ${isHidden}, '${file.sha}')">
                                 <i class="fas ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i>
@@ -74,7 +70,6 @@ async function loadAssets() {
     } catch (e) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4444;">Error: ${e.message}</td></tr>`; }
 }
 
-// --- CORE: CREATE (UPLOAD BASE64) ---
 async function handleUpload(input) {
     const file = input.files[0];
     if (!file) return;
@@ -82,14 +77,14 @@ async function handleUpload(input) {
     showLoader();
     const reader = new FileReader();
     reader.onload = async (e) => {
-        const base64Content = e.target.result.split(',')[1]; // Remove data:image/jpeg;base64,
+        const base64Content = e.target.result.split(',')[1];
         try {
             await fetch(`https://api.github.com/repos/${REPO_URL}/contents/images/${file.name}`, {
                 method: 'PUT',
                 headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: `Admin: Uploaded ${file.name}`, content: base64Content })
             });
-            input.value = ""; // Reset input
+            input.value = "";
             loadAssets();
         } catch (err) { alert("Upload Failed."); }
         finally { hideLoader(); }
@@ -97,7 +92,6 @@ async function handleUpload(input) {
     reader.readAsDataURL(file);
 }
 
-// --- CORE: UPDATE (RENAME / HIDE) ---
 async function toggleVisibility(oldName, currentlyHidden, sha) {
     const newName = currentlyHidden ? oldName.replace('hidden_', '') : 'hidden_' + oldName;
     await renameFileOnGithub(oldName, newName, sha);
@@ -119,7 +113,6 @@ document.getElementById('confirm-rename').onclick = async () => {
     if(!newBase) return alert("Name cannot be empty");
     const ext = document.getElementById('ext-label').innerText;
     
-    // Preserve hidden status if it was hidden
     const prefix = oldFileName.startsWith('hidden_') ? 'hidden_' : '';
     await renameFileOnGithub(oldFileName, prefix + newBase + ext, renameSha);
     closeModal();
@@ -128,18 +121,15 @@ document.getElementById('confirm-rename').onclick = async () => {
 async function renameFileOnGithub(oldName, newName, sha) {
     showLoader();
     try {
-        // 1. Get original content
         const getRes = await fetch(`https://api.github.com/repos/${REPO_URL}/contents/images/${oldName}?t=${Date.now()}`, { headers: { 'Authorization': `token ${currentToken}` }});
         const fileData = await getRes.json();
 
-        // 2. Create new file
         await fetch(`https://api.github.com/repos/${REPO_URL}/contents/images/${newName}`, {
             method: 'PUT',
             headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: `Admin: Renamed ${oldName} to ${newName}`, content: fileData.content })
         });
 
-        // 3. Delete old file
         await fetch(`https://api.github.com/repos/${REPO_URL}/contents/images/${oldName}`, {
             method: 'DELETE',
             headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
@@ -150,7 +140,6 @@ async function renameFileOnGithub(oldName, newName, sha) {
     finally { hideLoader(); }
 }
 
-// --- CORE: DELETE ---
 async function deleteAsset(name, sha) {
     if(!confirm(`Are you sure you want to permanently delete ${name}?`)) return;
     showLoader();
