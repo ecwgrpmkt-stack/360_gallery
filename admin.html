@@ -1,77 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECW | Developer Console</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta charset="utf-8">
+    <title>ECW Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="admin-body">
 
-<div class="admin-card">
-    <h2 style="text-align: center; font-weight: 300; letter-spacing: 2px; margin-bottom: 30px;">DEVELOPER DASHBOARD</h2>
+    <nav class="admin-nav">
+        <div class="logo">ECW Studio <span>Admin</span></div>
+        <div class="nav-right">
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </nav>
 
-    <div class="config-grid">
-        <div class="input-group">
-            <label>GitHub Access Token</label>
-            <div class="field-row">
-                <input type="password" id="gh-token" readonly value="********************">
-                <button onclick="toggleLock('token')" class="btn btn-secondary"><i id="lock-icon-token" class="fas fa-lock"></i></button>
+    <div class="admin-container">
+        
+        <div class="admin-panel upload-panel">
+            <h2>Upload New Image</h2>
+            <div class="upload-controls">
+                <div class="input-group">
+                    <label>GitHub Personal Access Token (Classic)</label>
+                    <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" class="token-input">
+                </div>
+                
+                <div class="file-drop-area" id="dropArea">
+                    <input type="file" id="fileInput" accept="image/jpeg, image/png">
+                    <p>Drag & Drop Image Here or <span>Browse</span></p>
+                </div>
+                <div id="uploadStatus" class="status-msg"></div>
             </div>
         </div>
-        <div class="input-group">
-            <label>Repository Path</label>
-            <div class="field-row">
-                <input type="password" id="gh-repo" readonly value="********************">
-                <button onclick="toggleLock('repo')" class="btn btn-secondary"><i id="lock-icon-repo" class="fas fa-lock"></i></button>
+
+        <div class="admin-panel list-panel">
+            <div class="panel-header">
+                <h2>Repository Images</h2>
+                <button onclick="loadImages()" class="refresh-btn">Refresh List</button>
             </div>
-        </div>
-    </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-weight: 300;">Assets Manager</h3>
-        <button onclick="document.getElementById('file-input').click()" class="btn"><i class="fas fa-upload"></i> Upload Image</button>
-        <input type="file" id="file-input" hidden accept="image/*" onchange="handleUpload(this)">
-    </div>
-
-    <div class="table-wrap">
-        <table class="image-table">
-            <thead>
-                <tr>
-                    <th>Preview</th>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="asset-table">
+            <table class="image-table">
+                <thead>
+                    <tr>
+                        <th>Preview</th>
+                        <th>Filename</th>
+                        <th>Dimensions</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="imageTableBody">
+                    <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
                 </tbody>
-        </table>
-    </div>
-</div>
-
-<div id="rename-modal">
-    <div class="modal-content">
-        <h3 style="margin-top: 0; font-weight: 300;">Rename Asset</h3>
-        <div class="field-row" style="margin-top: 20px;">
-            <input type="text" id="rename-input" placeholder="Filename">
-            <span id="ext-label" style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 0 8px 8px 0; font-weight: bold;">.jpg</span>
+            </table>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
-            <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
-            <button id="confirm-rename" class="btn">Update</button>
-        </div>
-    </div>
-</div>
 
-<div id="loading-modal">
-    <div style="color: white; text-align: center;">
-        <i class="fas fa-spinner fa-spin fa-3x"></i>
-        <p style="margin-top: 15px; font-family: monospace;">Executing GitHub API Task...</p>
     </div>
-</div>
-
-<script src="admin.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
