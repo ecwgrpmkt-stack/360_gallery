@@ -14,13 +14,10 @@ const tokenLockBtn = document.getElementById('tokenLockBtn');
 let isTokenLocked = true; 
 const savedToken = localStorage.getItem('ecw_gh_token');
 
-// Smart Initialization
 if (savedToken) {
-    // We have a saved token. Keep it locked.
     tokenInput.value = savedToken;
     lockTokenField();
 } else {
-    // No token saved yet. Auto-unlock it for the user.
     unlockTokenField();
 }
 
@@ -44,7 +41,6 @@ function lockTokenField() {
     tokenLockBtn.title = 'Unlock to Edit';
     isTokenLocked = true;
     
-    // Save only if there is actual text
     if (tokenInput.value.trim() !== '') {
         localStorage.setItem('ecw_gh_token', tokenInput.value.trim());
     }
@@ -59,7 +55,6 @@ tokenLockBtn.addEventListener('click', () => {
     }
 });
 
-// Copy Repo Link
 document.getElementById('copyRepoBtn').onclick = () => {
     const repoUrl = document.getElementById('repoUrl');
     repoUrl.select();
@@ -127,35 +122,52 @@ function analyzeImage(url, cellElement) {
     img.onload = function() { cellElement.innerText = `${img.naturalWidth} x ${img.naturalHeight}`; };
 }
 
-// --- 5. GITHUB API HELPER ---
+// --- 5. GITHUB API HELPER (FIXED FOR CORS/FETCH ERRORS) ---
 async function githubRequest(endpoint, method = 'GET', body = null) {
     const rawToken = document.getElementById('githubToken').value;
-    const cleanToken = rawToken.replace(/[^a-zA-Z0-9_\-]/g, ''); 
+    const cleanToken = rawToken.trim(); // Removed aggressive regex, just trim spaces
     
     if (!cleanToken) {
-        // Auto-unlock the field so they can enter it
         if(isTokenLocked) unlockTokenField();
         tokenInput.focus();
         throw new Error("Please enter and lock your GitHub Token first.");
     }
     
+    // Official GitHub API Headers
     const options = {
         method: method,
         headers: { 
-            'Authorization': `token ${cleanToken}`, 
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${cleanToken}`, 
+            'X-GitHub-Api-Version': '2022-11-28'
         }
     };
-    if (body) options.body = JSON.stringify(body);
     
-    const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/${endpoint}`, options);
-    
-    if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || `API Error: ${response.status}`);
+    if (body) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
     }
-    return response;
+    
+    try {
+        const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/${endpoint}`, options);
+        
+        if (!response.ok) {
+            let errorMsg = `API Error: ${response.status}`;
+            try {
+                const errData = await response.json();
+                errorMsg = errData.message || errorMsg;
+            } catch(e) {}
+            throw new Error(errorMsg);
+        }
+        return response;
+        
+    } catch (error) {
+        // Provide exact clarification if the browser blocks the request
+        if (error.message.includes('Failed to fetch')) {
+            throw new Error("Browser Blocked Request (CORS). Please disable adblockers/Brave Shields for this page.");
+        }
+        throw error;
+    }
 }
 
 // --- 6. MODAL WORKFLOWS ---
@@ -298,7 +310,6 @@ document.getElementById('fileInput').addEventListener('change', async function()
             throw new Error("GitHub Token required. Please enter and lock it.");
         }
         
-        // Auto-lock and save if they hit upload while it's unlocked
         if(!isTokenLocked) lockTokenField();
 
         statusMsg.innerHTML = `<span style="color:orange">Reading file...</span>`;
@@ -311,10 +322,13 @@ document.getElementById('fileInput').addEventListener('change', async function()
 
                 let existingSha = null;
                 try {
+                    // This GET might throw a 404 (Not Found) if it's a new file, which we silently ignore
                     const checkRes = await githubRequest(`contents/${IMAGE_FOLDER}/${encodeURIComponent(safeFileName)}`, 'GET');
                     const existingFile = await checkRes.json();
                     existingSha = existingFile.sha;
-                } catch (e) { }
+                } catch (e) { 
+                    // Silent catch for 404
+                }
 
                 statusMsg.innerHTML = `<span style="color:orange">Uploading to GitHub...</span>`;
                 const requestBody = { message: `Upload ${safeFileName}`, content: base64Content };
