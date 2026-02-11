@@ -4,30 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECW 360° Interactive Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="panorama"></div>
+    <div id="app">
+        <div id="sidebar">
+            <div class="sidebar-title">ECW Studio Gallery</div>
+            <div id="thumbPanel"></div>
+        </div>
 
-    <div id="ecw-loader" class="loader-overlay">
+        <div id="viewer" style="position: relative;">
+            <div id="panorama" style="width: 100%; height: 100%;"></div>
+            
+            <canvas id="drawingCanvas"></canvas>
+            
+            <div id="drawingToolbar">
+                <button class="tool-btn" id="toggleDraw" title="Draw Mode"><i class="fas fa-pen"></i></button>
+                <div id="drawTools" style="display: none; flex-direction: column; gap: 6px;">
+                    <input type="color" id="colorPicker" value="#ff3333" title="Brush Color" style="width: 34px; height: 34px; padding: 0; border: none; background: none; cursor: pointer;">
+                    <input type="range" id="brushSize" min="1" max="20" value="5" title="Brush Size" style="width: 34px;">
+                    <button class="tool-btn" id="undoBtn" title="Undo"><i class="fas fa-undo"></i></button>
+                    <button class="tool-btn" id="redoBtn" title="Redo"><i class="fas fa-redo"></i></button>
+                    <button class="tool-btn" id="clearBtn" title="Clear Canvas" style="color: #ff3333;"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+
+            <div id="idleIndicator">
+                <div class="hand-icon"><i class="fas fa-hand-pointer" style="color: white;"></i></div>
+                <span class="drag-text">Drag to Explore</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="ecwLoader" class="loader-overlay">
         <div class="spinner"></div>
-        <h2>Loading Gallery...</h2>
+        <div class="loader-text">Loading Gallery...</div>
     </div>
-
-    <div id="interaction-hint" class="hidden">
-        <div class="touch-icon">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                <path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6a1 1 0 0 0-2 0v10.53l-3.33-.7a1.01 1.01 0 0 0-1.03.44l-.3.41 4.29 4.72c.2.22.48.34.78.34h5.45c.48 0 .9-.31 1.05-.76l1.2-3.6c.16-.49-.07-1.01-.52-1.26z"/>
-            </svg>
-        </div>
-        <span class="hint-text">Drag to Explore</span>
-    </div>
-
-    <div id="thumbnail-container" class="thumbnail-bar">
-        </div>
 
     <script src="app.js"></script>
 </body>
