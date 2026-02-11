@@ -15,9 +15,7 @@
     </nav>
 
     <div class="admin-container">
-        
         <div class="admin-panel upload-panel">
-            
             <div class="config-group">
                 <label>GitHub Personal Access Token (Classic)</label>
                 <div class="input-with-btn">
@@ -67,8 +65,21 @@
                 </tbody>
             </table>
         </div>
-
     </div>
+
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="modalTitle">Action</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                </div>
+            <div class="modal-footer" id="modalFooter">
+                </div>
+        </div>
+    </div>
+
     <script src="admin.js"></script>
 </body>
 </html>
