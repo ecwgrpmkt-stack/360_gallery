@@ -8,37 +8,38 @@
     <style>
         :root { --accent: #3b82f6; --glass: rgba(255, 255, 255, 0.05); --border: rgba(255, 255, 255, 0.1); }
         body { margin: 0; font-family: 'Inter', sans-serif; background: radial-gradient(circle at top right, #1e293b, #0f172a); color: white; min-height: 100vh; padding: 40px 20px; }
-        .admin-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); max-width: 1000px; margin: auto; border-radius: 24px; padding: 40px; }
+        .admin-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); max-width: 1000px; margin: auto; border-radius: 24px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         
         .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; margin-bottom: 30px; }
         .input-group { display: flex; flex-direction: column; gap: 8px; }
         .input-group label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
         
         .field-row { display: flex; gap: 8px; }
-        input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; font-family: monospace; }
-        input[readonly] { color: #475569; }
+        input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; font-family: monospace; outline: none; }
+        input[readonly] { color: #475569; cursor: not-allowed; }
 
-        .btn { background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
         .btn-secondary { background: rgba(255,255,255,0.1); }
         .btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .table-wrap { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
         th { text-align: left; color: #94a3b8; font-size: 12px; padding: 15px; border-bottom: 1px solid var(--border); }
-        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; }
         
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
         .status-live { background: #22c55e33; color: #22c55e; }
         .status-hidden { background: #ef444433; color: #ef4444; }
-        .thumb { width: 50px; height: 35px; border-radius: 4px; object-fit: cover; }
+        .thumb { width: 60px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
         
-        #rename-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        #rename-modal, #loading-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #1e293b; padding: 30px; border-radius: 20px; width: 400px; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
 <div class="admin-card">
-    <h2>DEVELOPER DASHBOARD</h2>
+    <h2 style="text-align: center; font-weight: 300; letter-spacing: 2px; margin-bottom: 30px;">DEVELOPER DASHBOARD</h2>
 
     <div class="config-grid">
         <div class="input-group">
@@ -58,36 +59,45 @@
     </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Assets Manager</h3>
+        <h3 style="font-weight: 300;">Assets Manager</h3>
         <button onclick="document.getElementById('file-input').click()" class="btn"><i class="fas fa-upload"></i> Upload Image</button>
-        <input type="file" id="file-input" hidden onchange="handleUpload(this)">
+        <input type="file" id="file-input" hidden accept="image/*" onchange="handleUpload(this)">
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Preview</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="asset-table">
-            </tbody>
-    </table>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Preview</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="asset-table">
+                </tbody>
+        </table>
+    </div>
 </div>
 
 <div id="rename-modal">
     <div class="modal-content">
-        <h3>Rename Asset</h3>
+        <h3 style="margin-top: 0; font-weight: 300;">Rename Asset</h3>
         <div class="field-row" style="margin-top: 20px;">
             <input type="text" id="rename-input" placeholder="Filename">
-            <span id="ext-label" style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 0 8px 8px 0;">.jpg</span>
+            <span id="ext-label" style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 0 8px 8px 0; font-weight: bold;">.jpg</span>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
             <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
             <button id="confirm-rename" class="btn">Update</button>
         </div>
+    </div>
+</div>
+
+<div id="loading-modal">
+    <div style="color: white; text-align: center;">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p style="margin-top: 15px; font-family: monospace;">Executing GitHub API Task...</p>
     </div>
 </div>
 
