@@ -51,7 +51,7 @@ html, body {
 
 /* TOOLBAR */
 #drawingToolbar {
-    position: absolute; top: 20px; left: 20px;
+    position: absolute; top: 100px; left: 20px;
     display: flex; flex-direction: column; gap: 6px;
     z-index: 110; background: rgba(0, 0, 0, 0.75);
     padding: 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px);
