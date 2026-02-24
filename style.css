@@ -306,35 +306,37 @@ input[type="text"], input[type="password"] {
 .rename-ext { color: #888; font-weight: bold; margin-left: 5px; font-size: 1rem; }
 
 /* =========================================================
-   MOBILE RESPONSIVE PATCH - 360 INTERIOR GALLERY (V3)
+   MOBILE RESPONSIVE PATCH - 360 INTERIOR GALLERY (V5)
    ========================================================= */
-@media (max-width: 900px) {
-    /* Hide the Hand Icon & Drag Text */
-    #idleIndicator { display: none !important; opacity: 0 !important; visibility: hidden !important; }
 
-    /* Make the Back button smaller */
+/* GLOBAL LOADER FIX: Lock to physical viewport to prevent split-screen */
+#ecwLoader {
+    position: fixed !important; 
+    top: 0 !important; 
+    left: 0 !important; 
+    width: 100vw !important; 
+    height: 100vh !important; 
+    background-color: #000000 !important; /* Pure Black */
+    z-index: 9999 !important; /* Force to absolute top */
+}
+
+@media (max-width: 900px) {
+    #idleIndicator { display: none !important; opacity: 0 !important; visibility: hidden !important; }
     .back-btn { font-size: 0.65rem !important; letter-spacing: 1px !important; }
     .back-btn .arrow { font-size: 1.1rem !important; }
 
-    /* Mathematically Center the Controls & Reduce Size by 50% */
+    /* Mathematically Center Controls & REDUCE SIZE BY 50% */
     #controls {
-        position: absolute !important; 
-        bottom: 100px !important; /* Hover just above the thumbnail bar */
-        left: 50% !important; 
-        transform: translateX(-50%) !important;
-        display: flex !important; 
-        justify-content: center !important; 
-        width: max-content !important; 
-        z-index: 200 !important;
-        gap: 12px !important;
+        position: absolute !important; bottom: 100px !important; left: 50% !important; 
+        transform: translateX(-50%) !important; display: flex !important; 
+        justify-content: center !important; width: max-content !important; 
+        z-index: 200 !important; gap: 12px !important;
     }
     
-    /* Shrink the buttons from 60px down to 35px */
+    /* Scale down from 60px to 35px */
     #controls button {
-        width: 35px !important; 
-        height: 35px !important; 
-        font-size: 0.9rem !important; 
-        border-width: 1px !important;
+        width: 35px !important; height: 35px !important; 
+        font-size: 0.9rem !important; border-width: 1px !important;
     }
 
     /* Transform vertical sidebar into horizontal swipeable bottom bar */
@@ -347,18 +349,14 @@ input[type="text"], input[type="password"] {
     }
     .sidebar-title { display: none !important; }
     
-    /* Make thumbnails swipeable left/right */
     #thumbPanel { 
         flex-direction: row !important; overflow-x: auto !important; overflow-y: hidden !important;
         padding: 10px !important; gap: 10px !important;
     }
     #sidebar .thumb { width: 80px !important; height: 60px !important; flex-shrink: 0 !important; }
-
-    /* Hide drawing tools on mobile to clear screen space */
     #drawingToolbar { display: none !important; }
 }
 
-/* Landscape orientation adjustment */
 @media (max-height: 600px) and (orientation: landscape) {
     #controls { bottom: 80px !important; }
     #sidebar .thumb { height: 50px !important; width: 70px !important; }
