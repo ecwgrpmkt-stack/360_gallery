@@ -306,7 +306,7 @@ input[type="text"], input[type="password"] {
 .rename-ext { color: #888; font-weight: bold; margin-left: 5px; font-size: 1rem; }
 
 /* =========================================================
-   MOBILE RESPONSIVE PATCH - 360 INTERIOR GALLERY (V2)
+   MOBILE RESPONSIVE PATCH - 360 INTERIOR GALLERY (V3)
    ========================================================= */
 @media (max-width: 900px) {
     /* Hide the Hand Icon & Drag Text */
@@ -316,17 +316,25 @@ input[type="text"], input[type="password"] {
     .back-btn { font-size: 0.65rem !important; letter-spacing: 1px !important; }
     .back-btn .arrow { font-size: 1.1rem !important; }
 
-    /* Mathematically Center the Controls (Next/Prev/FS) */
+    /* Mathematically Center the Controls & Reduce Size by 50% */
     #controls {
         position: absolute !important; 
-        bottom: 110px !important; 
+        bottom: 100px !important; /* Hover just above the thumbnail bar */
         left: 50% !important; 
         transform: translateX(-50%) !important;
         display: flex !important; 
         justify-content: center !important; 
         width: max-content !important; 
         z-index: 200 !important;
-        gap: 15px !important;
+        gap: 12px !important;
+    }
+    
+    /* Shrink the buttons from 60px down to 35px */
+    #controls button {
+        width: 35px !important; 
+        height: 35px !important; 
+        font-size: 0.9rem !important; 
+        border-width: 1px !important;
     }
 
     /* Transform vertical sidebar into horizontal swipeable bottom bar */
@@ -350,7 +358,8 @@ input[type="text"], input[type="password"] {
     #drawingToolbar { display: none !important; }
 }
 
+/* Landscape orientation adjustment */
 @media (max-height: 600px) and (orientation: landscape) {
-    #controls { bottom: 85px !important; }
+    #controls { bottom: 80px !important; }
     #sidebar .thumb { height: 50px !important; width: 70px !important; }
 }
