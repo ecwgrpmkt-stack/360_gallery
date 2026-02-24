@@ -304,3 +304,37 @@ input[type="text"], input[type="password"] {
     flex: 1; padding: 0; outline: none; margin: 0; font-size: 1rem;
 }
 .rename-ext { color: #888; font-weight: bold; margin-left: 5px; font-size: 1rem; }
+
+/* =========================================================
+   QUICK MOBILE PATCH - 360 INTERIOR VIEWER
+   ========================================================= */
+@media (max-width: 800px) {
+    /* Transform vertical sidebar into horizontal bottom bar */
+    #sidebar { 
+        position: absolute !important; 
+        bottom: 0 !important; 
+        left: 0 !important; 
+        width: 100% !important; 
+        height: auto !important; 
+        flex-direction: row !important; 
+        z-index: 100 !important;
+        border-right: none !important;
+        border-top: 1px solid #222 !important;
+    }
+    .sidebar-title { display: none !important; }
+    
+    /* Make thumbnails swipeable horizontally */
+    #thumbPanel { 
+        flex-direction: row !important; 
+        overflow-x: auto !important; 
+        padding: 10px !important; 
+    }
+    #sidebar .thumb { 
+        width: 80px !important; 
+        height: 60px !important; 
+        flex-shrink: 0 !important; 
+    }
+
+    /* Move the main controls up slightly to make room for the new bottom bar */
+    #controls { bottom: 100px !important; }
+}
