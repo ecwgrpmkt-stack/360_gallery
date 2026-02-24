@@ -71,5 +71,41 @@
 
     </div>
     <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Send "Close Iframe" command to the Master Landing Page
+            const shellBackBtn = document.getElementById('shellBackBtn');
+            if (shellBackBtn) {
+                shellBackBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.self !== window.top) { 
+                        window.parent.postMessage('close-iframe', '*');
+                    } else { 
+                        window.location.href = "https://ecwgrpmkt-stack.github.io/ECW-Studio-Landing-Page/index.html";
+                    }
+                });
+            }
+
+            // 2. Send "Toggle Fullscreen" command to the Master Landing Page
+            const fsBtn = document.getElementById('fsBtn');
+            if (fsBtn) {
+                const newFsBtn = fsBtn.cloneNode(true);
+                fsBtn.parentNode.replaceChild(newFsBtn, fsBtn);
+                
+                newFsBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.self !== window.top) {
+                        window.parent.postMessage('toggle-fullscreen', '*');
+                    } else {
+                        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                        else if (document.exitFullscreen) document.exitFullscreen();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
 </body>
 </html>
