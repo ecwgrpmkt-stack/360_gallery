@@ -306,10 +306,23 @@ input[type="text"], input[type="password"] {
 .rename-ext { color: #888; font-weight: bold; margin-left: 5px; font-size: 1rem; }
 
 /* =========================================================
-   QUICK MOBILE PATCH - 360 INTERIOR VIEWER
+   MOBILE RESPONSIVE PATCH - 360 INTERIOR GALLERY
    ========================================================= */
-@media (max-width: 800px) {
-    /* Transform vertical sidebar into horizontal bottom bar */
+@media (max-width: 900px) {
+    /* 1. Mathematically Center the Controls (Next/Prev/FS) */
+    #controls {
+        position: absolute !important; 
+        bottom: 110px !important; 
+        left: 50% !important; 
+        transform: translateX(-50%) !important;
+        display: flex !important; 
+        justify-content: center !important; 
+        width: max-content !important; 
+        z-index: 200 !important;
+        gap: 15px !important;
+    }
+
+    /* 2. Transform vertical sidebar into horizontal swipeable bottom bar */
     #sidebar { 
         position: absolute !important; 
         bottom: 0 !important; 
@@ -317,17 +330,21 @@ input[type="text"], input[type="password"] {
         width: 100% !important; 
         height: auto !important; 
         flex-direction: row !important; 
-        z-index: 100 !important;
+        z-index: 150 !important;
         border-right: none !important;
-        border-top: 1px solid #222 !important;
+        border-top: 1px solid rgba(255,255,255,0.1) !important;
+        background: rgba(0,0,0,0.85) !important;
+        backdrop-filter: blur(10px) !important;
     }
     .sidebar-title { display: none !important; }
     
-    /* Make thumbnails swipeable horizontally */
+    /* Make thumbnails swipeable left/right */
     #thumbPanel { 
         flex-direction: row !important; 
         overflow-x: auto !important; 
+        overflow-y: hidden !important;
         padding: 10px !important; 
+        gap: 10px !important;
     }
     #sidebar .thumb { 
         width: 80px !important; 
@@ -335,6 +352,11 @@ input[type="text"], input[type="password"] {
         flex-shrink: 0 !important; 
     }
 
-    /* Move the main controls up slightly to make room for the new bottom bar */
-    #controls { bottom: 100px !important; }
+    /* Hide drawing tools on mobile to clear screen space */
+    #drawingToolbar { display: none !important; }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+    #controls { bottom: 85px !important; }
+    #sidebar .thumb { height: 50px !important; width: 70px !important; }
 }
